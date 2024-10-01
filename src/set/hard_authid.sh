@@ -1,12 +1,15 @@
 #!/bin/bash
 
+echo "Starting authentication and identification hardening process..."
+
 # Ensure running as root
 if [ "$EUID" -ne 0 ]; then
   echo "Please run this script as root."
   exit 1
 fi
 
-echo "Starting authentication and identification hardening process..."
+# Install necessary packages
+sudo apt install libpam-pwquality
 
 # ===============================
 # Backup Critical Configuration Files
@@ -24,49 +27,16 @@ backup_file "/etc/pam.d/common-auth"
 backup_file "/etc/ssh/sshd_config"
 
 # ===============================
-# Set Password Policies
+# Set Password Policies and configurations
 # ===============================
-echo "Configuring password policies..."
-if ! grep -q "pam_pwquality.so" /etc/pam.d/common-password; then
-  echo "password requisite pam_pwquality.so retry=3 minlen=12 ucredit=-1 lcredit=-1 dcredit=-1 ocredit=-1" >> /etc/pam.d/common-password
-  echo "Password policy configured."
-else
-  echo "Password policy already configured."
-fi
-
-# ===============================
-# Enforce Password Complexity
-# ===============================
-echo "Enforcing password complexity..."
-if dpkg -l | grep -q libpam-cracklib; then
-  echo "libpam-cracklib is already installed."
-else
-  apt-get install -y libpam-cracklib
-fi
-
-if ! grep -q "pam_cracklib.so" /etc/pam.d/common-password; then
-  echo "password requisite pam_cracklib.so retry=3 minlen=12 ucredit=-1 lcredit=-1 dcredit=-1 ocredit=-1 difok=3" >> /etc/pam.d/common-password
-  echo "Password complexity enforced."
-else
-  echo "Password complexity already enforced."
-fi
+echo "Setting password policies..."
+sudo cp config/common-password /etc/pam.d/common-password
 
 # ===============================
 # Set Account Lockout Policy (using pam_faillock if available)
 # ===============================
-if grep -q "pam_faillock.so" /etc/pam.d/common-auth; then
-  echo "Account lockout policy already configured with pam_faillock."
-else
-  if dpkg -l | grep -q pam_faillock; then
-    echo "Configuring account lockout policy with pam_faillock..."
-    echo "auth required pam_faillock.so preauth silent deny=5 unlock_time=1800" >> /etc/pam.d/common-auth
-    echo "auth required pam_faillock.so authfail deny=5 unlock_time=1800" >> /etc/pam.d/common-auth
-  else
-    echo "Configuring account lockout policy with pam_tally2..."
-    echo "auth required pam_tally2.so deny=5 unlock_time=1800" >> /etc/pam.d/common-auth
-  fi
-  echo "Account lockout policy configured."
-fi
+echo "Setting account lockout policy..."
+sudo cp config/common-auth /etc/pam.d/common-auth
 
 # ===============================
 # Disable Root Login (SSH)
