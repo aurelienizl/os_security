@@ -9,18 +9,24 @@ fi
 echo "Checking file protection hardening compliance..."
 
 # ===============================
-# Check restrictive permissions on sensitive files
+# Check restrictive permissions on sensitive files and directories
 # ===============================
 echo "Checking permissions on sensitive files..."
 
 check_permissions() {
   file=$1
   expected_perms=$2
+  if [ ! -f "$file" ]; then
+    echo "$file does not exist."
+    return
+  fi
   actual_perms=$(stat -c "%a" "$file" 2>/dev/null)
   if [ "$actual_perms" == "$expected_perms" ]; then
     echo "$file has correct permissions: $expected_perms."
   else
     echo "$file does not have correct permissions. Current permissions: $actual_perms."
+    echo "Setting correct permissions..."
+    chmod "$expected_perms" "$file"
   fi
 }
 
@@ -47,6 +53,10 @@ echo "Checking ownership of critical files..."
 
 check_ownership() {
   file=$1
+  if [ ! -f "$file" ]; then
+    echo "$file does not exist."
+    return
+  fi
   expected_owner=$2
   expected_group=$3
   actual_owner=$(stat -c "%U" "$file" 2>/dev/null)
@@ -55,6 +65,8 @@ check_ownership() {
     echo "$file ownership is correct: $expected_owner:$expected_group."
   else
     echo "$file ownership is not correct. Current ownership: $actual_owner:$actual_group."
+    echo "Setting correct ownership..."
+    chown "$expected_owner:$expected_group" "$file"
   fi
 }
 
@@ -73,10 +85,16 @@ echo "Checking immutable attribute on critical files..."
 
 check_immutable() {
   file=$1
+  if [ ! -f "$file" ]; then
+    echo "$file does not exist."
+    return
+  fi
   if lsattr "$file" | grep -q "\-i\-\-\-\-\-\-\-\-\-"; then
     echo "$file has the immutable attribute set."
   else
     echo "$file does not have the immutable attribute set."
+    echo "Setting immutable attribute..."
+    chattr +i "$file"
   fi
 }
 
@@ -88,20 +106,6 @@ check_immutable "/etc/hosts.deny"
 check_immutable "/etc/ssh/sshd_config"
 check_immutable "/etc/sudoers"
 
-# ===============================
-# Check permissions for sensitive directories
-# ===============================
-echo "Checking permissions for sensitive directories..."
-
-check_permissions "/root" "700"
-check_permissions "/var/log" "750"
-
-#!/bin/bash
-
-# ===============================
-# Check for world-writable permissions
-# ===============================
-#!/bin/bash
 
 # ===============================
 # Check for world-writable permissions (excluding sticky-bit directories)
@@ -147,6 +151,8 @@ check_sgid() {
     echo "SGID bit is set on $dir."
   else
     echo "SGID bit is not set on $dir."
+    echo "Setting SGID bit..."
+    chmod g+s "$dir"
   fi
 }
 
