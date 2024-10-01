@@ -12,13 +12,6 @@ fi
 echo "Disabling USB ports by blacklisting the usb-storage module..."
 echo "blacklist usb-storage" > /etc/modprobe.d/disable-usb-storage.conf
 
-# Remove the usb-storage module if it is currently loaded
-if lsmod | grep -q "usb_storage"; then
-    modprobe -r usb-storage
-    echo "USB storage module removed."
-else
-    echo "USB storage module is not loaded."
-fi
 
 # ===============================
 # Restrict Access to Serial Ports
@@ -35,13 +28,9 @@ fi
 # Disable Firewire Modules
 # ===============================
 echo "Disabling Firewire modules..."
-if lsmod | grep -q "firewire"; then
-    echo "install firewire-core /bin/true" > /etc/modprobe.d/disable-firewire.conf
-    echo "install firewire-ohci /bin/true" >> /etc/modprobe.d/disable-firewire.conf
-    echo "Firewire modules disabled."
-else
-    echo "No Firewire modules loaded."
-fi
+echo "blacklist firewire-core" > /etc/modprobe.d/disable-firewire.conf
+echo "blacklist firewire-ohci" >> /etc/modprobe.d/disable-firewire.conf
+echo "Firewire modules disabled."
 
 # ===============================
 # Restrict Physical Console Access
@@ -82,6 +71,7 @@ fi
 
 # Update GRUB
 update-grub
+
 echo "GRUB configuration updated."
 
 # ===============================
