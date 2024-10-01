@@ -1,23 +1,7 @@
 # /etc/pam.d/common-auth - authentication settings for all services
 
-# Require two-factor authentication (comment out if not using)
-# auth    required    pam_google_authenticator.so
-
-# Deny access if too many failed login attempts
-auth    required    pam_tally2.so deny=5 unlock_time=600 even_deny_root audit
-
-# First check if user has correct password
-auth    [success=1 default=ignore]    pam_unix.so nullok_secure try_first_pass
-
-# Allow empty passwords only for local users (comment if not desired)
-# auth    requisite    pam_permit.so
-
-# Use a fail delay to slow down brute force attacks
-auth    optional    pam_faildelay.so delay=4000000
-
-# Two-factor authentication step for users
-# auth    [success=1 default=ignore] pam_google_authenticator.so
-
-# Use pam_deny to catch any non-allowed authentication attempts
-auth    requisite    pam_deny.so
-
+auth    [success=1 default=ignore]      pam_unix.so nullok
+auth    requisite                       pam_deny.so
+auth    required                        pam_permit.so
+auth    required                        pam_faildelay.so delay=4000000
+auth    required                        pam_pwquality.so retry=3
