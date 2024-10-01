@@ -33,54 +33,31 @@ echo "Setting password policies..."
 sudo cp config/common-password /etc/pam.d/common-password
 
 # ===============================
-# Set Account Lockout Policy (using pam_faillock if available)
+# Set Account Lockout Policy
 # ===============================
 echo "Setting account lockout policy..."
 sudo cp config/common-auth /etc/pam.d/common-auth
 
 # ===============================
-# Disable Root Login (SSH)
+# Enforce SSH
 # ===============================
-echo "Disabling root login for SSH..."
-if grep -q "^PermitRootLogin yes" /etc/ssh/sshd_config; then
-  sed -i 's/PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
-  echo "Root login disabled."
-else
-  echo "Root login is already disabled."
-fi
+sudo cp config/sshd_config /etc/ssh/sshd_config
+sudo apt install fail2ban
+sudo systemctl start fail2ban
+sudo systemctl enable fail2ban
+sudo systemctl restart fail2ban
 
 # ===============================
 # Limit Access to the su Command
 # ===============================
-echo "Limiting access to the su command..."
-if ! grep -q "auth required pam_wheel.so" /etc/pam.d/su; then
-  echo "auth required pam_wheel.so" >> /etc/pam.d/su
-  echo "Access to the su command restricted."
-else
-  echo "Access to the su command is already restricted."
+sudo cp config/su /etc/pam.d/su
+
+# If the group wheel does not exist, create it
+if ! grep -q "^wheel:" /etc/group; then
+  groupadd wheel
 fi
 
-if ! grep -q "^wheel:x:10" /etc/group; then
-  echo "wheel:x:10:username" >> /etc/group
-  echo "Wheel group added."
-else
-  echo "Wheel group already exists."
-fi
-
-# ===============================
-# Enable Login Banner
-# ===============================
-echo "Enabling login banner..."
-banner_text="Authorized access only. All activity may be monitored and reported."
-if ! grep -q "$banner_text" /etc/issue.net; then
-  echo "$banner_text" > /etc/issue.net
-  if ! grep -q "^Banner /etc/issue.net" /etc/ssh/sshd_config; then
-    echo "Banner /etc/issue.net" >> /etc/ssh/sshd_config
-  fi
-  echo "Login banner enabled."
-else
-  echo "Login banner is already enabled."
-fi
+exit 0
 
 # ===============================
 # Configure Session Timeout
