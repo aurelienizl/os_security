@@ -106,7 +106,6 @@ check_immutable "/etc/hosts.deny"
 check_immutable "/etc/ssh/sshd_config"
 check_immutable "/etc/sudoers"
 
-
 # ===============================
 # Check for world-writable permissions (excluding sticky-bit directories)
 # ===============================
@@ -138,8 +137,6 @@ else
   fi
 fi
 
-
-
 # ===============================
 # Check SGID bit on critical directories
 # ===============================
@@ -147,7 +144,20 @@ echo "Checking SGID bit on critical directories..."
 
 check_sgid() {
   dir=$1
-  if [ "$(stat -c "%A" "$dir" 2>/dev/null | cut -c 5)" == "s" ]; then
+  if [ ! -d "$dir" ]; then
+    echo "$dir does not exist."
+    return
+  fi
+  # Get the permissions of the directory in octal format
+  permissions=$(stat -c "%a" "$dir" 2>/dev/null)
+  if [ -z "$permissions" ]; then
+    echo "Error: Could not retrieve permissions for $dir."
+    return
+  fi
+
+  # Check if SGID bit is set by performing a bitwise AND with 2000
+  sgid_set=$(($(stat -c "%a" "$dir") & 2000))
+  if [ "$sgid_set" -ne 0 ]; then
     echo "SGID bit is set on $dir."
   else
     echo "SGID bit is not set on $dir."
