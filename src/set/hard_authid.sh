@@ -57,16 +57,17 @@ if ! grep -q "^wheel:" /etc/group; then
   groupadd wheel
 fi
 
-exit 0
-
 # ===============================
 # Configure Session Timeout
-# ===============================
+# ===============================]
+
 echo "Configuring session timeout..."
+
+# Check if TMOUT is already set in /etc/profile
 if ! grep -q "TMOUT=600" /etc/profile; then
-  echo "TMOUT=600" >> /etc/profile
-  echo "readonly TMOUT" >> /etc/profile
-  echo "export TMOUT" >> /etc/profile
+  echo "TMOUT=600" >>/etc/profile
+  echo "readonly TMOUT" >>/etc/profile
+  echo "export TMOUT" >>/etc/profile
   echo "Session timeout configured."
 else
   echo "Session timeout is already configured."
@@ -75,6 +76,5 @@ fi
 # ===============================
 # Concluding Message
 # ===============================
-echo "ANSSI Authentication and Identification Hardening measures applied successfully."
+echo "Authentication and Identification Hardening measures applied successfully."
 echo "Please restart services or reboot the system to activate changes."
-

@@ -2,7 +2,8 @@
 PermitRootLogin no
 
 # Allow only specific users or groups to connect via SSH
-AllowUsers your_username
+# TODO: Specify users here
+AllowUsers
 
 # Use only secure key exchange, cipher, and MAC algorithms
 KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org
