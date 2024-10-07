@@ -98,13 +98,13 @@ check_immutable() {
   fi
 }
 
-check_immutable "/etc/passwd"
-check_immutable "/etc/shadow"
-check_immutable "/etc/group"
-check_immutable "/etc/hosts.allow"
-check_immutable "/etc/hosts.deny"
-check_immutable "/etc/ssh/sshd_config"
-check_immutable "/etc/sudoers"
+#check_immutable "/etc/passwd"
+#check_immutable "/etc/shadow"
+#check_immutable "/etc/group"
+#check_immutable "/etc/hosts.allow"
+#check_immutable "/etc/hosts.deny"
+#check_immutable "/etc/ssh/sshd_config"
+#check_immutable "/etc/sudoers"
 
 # ===============================
 # Check for world-writable permissions (excluding sticky-bit directories)
