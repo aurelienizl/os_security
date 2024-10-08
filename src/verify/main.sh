@@ -39,3 +39,4 @@ run_script "./hard_hardware.sh"
 # Final Message
 # ===============================
 log "INFO" "Complete hardening process finished."
+echo -e "\nHardening process completed. Please review the log file at /var/log/hardening_script.log for more details."
