@@ -67,15 +67,23 @@ fi
 echo "Enforcing SSH security..."
 if [ -f "config/sshd_config" ]; then
   sudo cp config/sshd_config /etc/ssh/sshd_config
-  if systemctl is-active --quiet ssh; then
-    sudo systemctl reload ssh
-    echo "SSH configuration reloaded."
+
+  # Check if the sshd service is enabled
+  if systemctl is-enabled --quiet sshd; then
+    # If enabled, check if it's active and reload if necessary
+    if systemctl is-active --quiet sshd; then
+      sudo systemctl reload sshd
+      echo "SSH configuration reloaded as the service is active."
+    else
+      echo "SSH service is enabled but not running. Configuration updated, no reload necessary."
+    fi
   else
-    echo "SSH service is not active."
+    echo "SSH service is disabled. Configuration updated without reloading the service."
   fi
 else
   echo "sshd_config configuration file not found!"
 fi
+
 
 # Configure fail2ban
 echo "Configuring fail2ban..."
