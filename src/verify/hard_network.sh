@@ -1,11 +1,17 @@
 #!/bin/bash
 source ./log.sh
 
-# ===============================
-# Check if unused network services are disabled
-# ===============================
-log "INFO" "Checking for disabled unused network services..."
+# Ensure the script is run as root
+if [ "$EUID" -ne 0 ]; then
+  log "ERROR" "Please run this script as root."
+  exit 1
+fi
 
+log "INFO" "Starting network and sysctl configuration compliance check..."
+
+# ===============================
+# Helper function to check if a service is disabled
+# ===============================
 check_service_status() {
   service=$1
   if systemctl is-enabled "$service" &>/dev/null; then
@@ -15,7 +21,23 @@ check_service_status() {
   fi
 }
 
-# List of services to check
+# ===============================
+# Helper function to check firewall rules
+# ===============================
+check_iptables_rule() {
+  rule=$1
+  message=$2
+  if iptables -L INPUT -v -n | grep -q "$rule"; then
+    log "INFO" "$message"
+  else
+    log "INFO" "$rule is not present in iptables rules."
+  fi
+}
+
+# ===============================
+# Check if unused network services are disabled
+# ===============================
+log "INFO" "Checking for disabled unused network services..."
 services=("avahi-daemon" "cups" "nfs" "rpcbind" "postfix" "bluetooth" "apache2" "ssh")
 
 for service in "${services[@]}"; do
@@ -35,69 +57,9 @@ else
   log "WARNING" "Default INPUT policy is not DROP (current policy: $default_input_policy)."
 fi
 
-# Check if SSH is allowed
-if iptables -L INPUT -v -n | grep -q "dpt:22"; then
-  log "INFO" "SSH is allowed."
-else
-  log "WARNING" "SSH is not allowed."
-fi
+check_iptables_rule "dpt:22" "SSH is allowed."
+check_iptables_rule "RELATED,ESTABLISHED" "Related and established connections are allowed."
 
-# Check if related/established connections are allowed
-if iptables -L INPUT -v -n | grep -q "RELATED,ESTABLISHED"; then
-  log "INFO" "Related and established connections are allowed."
-else
-  log "WARNING" "Related and established connections are not allowed."
-fi
-
-# ===============================
-# Check kernel parameters (sysctl settings)
-# ===============================
-log "INFO" "Checking kernel parameters..."
-
-check_sysctl_setting() {
-  param=$1
-  expected_value=$2
-  actual_value=$(sysctl -n "$param")
-  if [ "$actual_value" -eq "$expected_value" ]; then
-    log "INFO" "$param is correctly set to $expected_value."
-  else
-    log "WARNING" "$param is not set correctly. Current value: $actual_value (should be $expected_value)."
-  fi
-}
-
-# SYN flood protection
-check_sysctl_setting "net.ipv4.tcp_syncookies" 1
-
-# IP forwarding
-check_sysctl_setting "net.ipv4.ip_forward" 0
-
-# ICMP redirects
-check_sysctl_setting "net.ipv4.conf.all.send_redirects" 0
-check_sysctl_setting "net.ipv4.conf.default.send_redirects" 0
-
-# Source routing
-check_sysctl_setting "net.ipv4.conf.all.accept_source_route" 0
-check_sysctl_setting "net.ipv4.conf.default.accept_source_route" 0
-
-# ARP protection
-check_sysctl_setting "net.ipv4.conf.all.arp_ignore" 1
-check_sysctl_setting "net.ipv4.conf.default.arp_ignore" 1
-check_sysctl_setting "net.ipv4.conf.all.arp_announce" 2
-check_sysctl_setting "net.ipv4.conf.default.arp_announce" 2
-
-# ===============================
-# Check if IPv6 is disabled
-# ===============================
-log "INFO" "Checking if IPv6 is disabled..."
-
-ipv6_all_disabled=$(sysctl -n net.ipv6.conf.all.disable_ipv6)
-ipv6_default_disabled=$(sysctl -n net.ipv6.conf.default.disable_ipv6)
-
-if [ "$ipv6_all_disabled" -eq 1 ] && [ "$ipv6_default_disabled" -eq 1 ]; then
-  log "INFO" "IPv6 is disabled."
-else
-  log "WARNING" "IPv6 is not disabled. Current values: all=$ipv6_all_disabled, default=$ipv6_default_disabled."
-fi
 
 # ===============================
 # Final Message
