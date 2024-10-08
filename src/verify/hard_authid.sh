@@ -1,4 +1,5 @@
 #!/bin/bash
+source ./log.sh
 
 echo "Starting verification of authentication and identification hardening..."
 

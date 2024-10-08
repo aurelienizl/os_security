@@ -8,14 +8,14 @@ echo "Checking for disabled unused network services..."
 check_service_status() {
   service=$1
   if systemctl is-enabled "$service" &>/dev/null; then
-    echo "$service is enabled (should be disabled)."
+    echo "$service is enabled, if this service is not required, consider disabling it."
   else
     echo "$service is disabled."
   fi
 }
 
 # List of services to check
-services=("avahi-daemon" "cups" "nfs" "rpcbind" "postfix" "bluetooth" "apache2")
+services=("avahi-daemon" "cups" "nfs" "rpcbind" "postfix" "bluetooth" "apache2" "ssh")
 
 for service in "${services[@]}"; do
   check_service_status "$service"

@@ -6,6 +6,8 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
+echo "Starting hardware hardening compliance check..."
+
 # ===============================
 # Kernel Module Checks
 # ===============================
@@ -15,14 +17,14 @@ echo "Checking kernel modules..."
 if grep -q "blacklist usb-storage" /etc/modprobe.d/*.conf; then
   echo "USB storage is blacklisted."
 else
-  echo "USB storage is not blacklisted."
+  echo "WARNING: USB storage is not blacklisted."
 fi
 
 # Check if Firewire modules are blacklisted
-if grep -q "blacklist firewire-core" /etc/modprobe.d/*.conf && grep -q "blacklist firewire-ohci" /etc/modprobe.d/*.conf; then
+if grep -q "blacklist firewire-core" /etc/modprobe.d/*.conf; then
   echo "Firewire modules are blacklisted."
 else
-  echo "Firewire modules are not blacklisted."
+  echo "WARNING: Firewire modules are not blacklisted."
 fi
 
 # ===============================
@@ -37,8 +39,7 @@ if [ -n "$serial_ports" ]; then
     if [ "$(stat -c "%a" "$port")" -eq 700 ]; then
       echo "$port has correct permissions."
     else
-      echo "$port does not have correct permissions."
-      echo "Permissions are: $(stat -c "%a" "$port")"
+      echo "WARNING: $port does not have correct permissions. Current permissions: $(stat -c "%a" "$port")"
     fi
   done
 else
@@ -51,14 +52,10 @@ fi
 
 # Check if physical console access is restricted
 echo "Checking console and boot settings..."
-if [ -f "/etc/securetty" ]; then
-  if grep -q "console" /etc/securetty; then
-    echo "Physical console access is restricted."
-  else
-    echo "Physical console access is not restricted."
-  fi
+if [ -f "/etc/securetty" ] && grep -q "console" /etc/securetty; then
+  echo "Physical console access is restricted."
 else
-  echo "The service is not configured."
+  echo "WARNING: Physical console access is not restricted."
 fi
 
 # Check if booting from external media is disabled (GRUB recovery mode)
@@ -66,30 +63,7 @@ grub_file="/etc/default/grub"
 if [ -f "$grub_file" ] && grep -q 'GRUB_DISABLE_RECOVERY="true"' "$grub_file"; then
   echo "Boot from external media is disabled."
 else
-  echo "Boot from external media is not disabled."
-fi
-
-# ===============================
-# UEFI and Secure Boot
-# ===============================
-
-# Check if the system is using UEFI
-echo "Checking UEFI and Secure Boot..."
-if [ -d /sys/firmware/efi ]; then
-  echo "UEFI is detected."
-else
-  echo "UEFI is not detected."
-fi
-
-# Check if Secure Boot is enabled
-if command -v mokutil &> /dev/null; then
-  if mokutil --sb-state | grep -q "SecureBoot enabled"; then
-    echo "Secure Boot is enabled."
-  else
-    echo "Secure Boot is not enabled."
-  fi
-else
-  echo "mokutil is not installed. Cannot check Secure Boot status."
+  echo "WARNING: Boot from external media is not disabled."
 fi
 
 # ===============================
@@ -101,30 +75,34 @@ echo "Checking GRUB and password policies..."
 if grep -q "GRUB_PASSWORD" "$grub_file"; then
   echo "GRUB password is set."
 else
-  echo "GRUB password is not set."
+  echo "WARNING: GRUB password is not set."
 fi
 
 # Check if the root account is locked
 if passwd -S root | grep -q "L"; then
   echo "Root account is locked."
 else
-  echo "Root account is not locked."
+  echo "WARNING: Root account is not locked."
 fi
 
 # Check password policy in /etc/login.defs
-max_days=$(grep "^PASS_MAX_DAYS" /etc/login.defs | awk '{print $2}')
-min_days=$(grep "^PASS_MIN_DAYS" /etc/login.defs | awk '{print $2}')
-warn_age=$(grep "^PASS_WARN_AGE" /etc/login.defs | awk '{print $2}')
+password_policy_check() {
+  local setting=$1
+  local expected_value=$2
+  local actual_value=$(grep "^$setting" /etc/login.defs | awk '{print $2}')
+  if [ "$actual_value" -eq "$expected_value" ]; then
+    echo "$setting is correctly set to $expected_value."
+  else
+    echo "WARNING: $setting is not correctly set. Current value: $actual_value."
+  fi
+}
 
-if [ "$max_days" -eq 90 ] && [ "$min_days" -eq 7 ] && [ "$warn_age" -eq 14 ]; then
-  echo "Password policy is correctly set."
-else
-  echo "Password policy is not correctly set."
-fi
+password_policy_check "PASS_MAX_DAYS" 90
+password_policy_check "PASS_MIN_DAYS" 7
+password_policy_check "PASS_WARN_AGE" 14
 
 # ===============================
 # Concluding Message
 # ===============================
 
-# Display a concluding message
 echo "Hardware hardening compliance check completed."

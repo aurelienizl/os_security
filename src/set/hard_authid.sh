@@ -67,7 +67,8 @@ fi
 echo "Enforcing SSH security..."
 if [ -f "config/sshd_config" ]; then
   sudo cp config/sshd_config /etc/ssh/sshd_config
-
+  # Set the owner and permissions for the sshd_config file
+  sudo chown root:root /etc/ssh/sshd_config
   # Check if the sshd service is enabled
   if systemctl is-enabled --quiet sshd; then
     # If enabled, check if it's active and reload if necessary
