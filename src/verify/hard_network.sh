@@ -89,7 +89,7 @@ if command -v iptables &>/dev/null; then
     log "WARNING" "DNS (port 53) is not present in iptables rules."
   fi
 
-elif command -v nft &>/dev/null; then
+elif sudo command -v nft &>/dev/null; then
   log "INFO" "Using nftables for firewall checks..."
 
   # Check default INPUT policy (nftables)
