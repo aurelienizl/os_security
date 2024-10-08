@@ -27,20 +27,18 @@ check_service_status() {
 check_iptables_rule() {
   rule=$1
   message=$2
-  if iptables -L INPUT -v -n | grep -q "$rule"; then
+  if sudo iptables -L INPUT -v -n | grep -q "$rule"; then
     log "INFO" "$message"
   else
     log "WARNING" "$rule is not present in iptables rules."
   fi
 }
 
-# ===============================
 # Helper function to check nftables rules
-# ===============================
 check_nftables_rule() {
   rule=$1
   message=$2
-  if nft list ruleset | grep -q "$rule"; then
+  if sudo nft list ruleset | grep -q "$rule"; then
     log "INFO" "$message"
   else
     log "WARNING" "$rule is not present in nftables rules."
@@ -62,37 +60,66 @@ done
 # ===============================
 log "INFO" "Checking firewall rules..."
 
-# Check if iptables or nftables is being used
 if command -v iptables &>/dev/null; then
   log "INFO" "Using iptables for firewall checks..."
 
   # Check default INPUT policy
-  default_input_policy=$(iptables -L INPUT --line-numbers | grep "Chain INPUT (policy" | awk '{print $4}')
+  default_input_policy=$(sudo iptables -L INPUT -n | grep -oP '(?<=policy\s)\w+')
+
   if [ "$default_input_policy" = "DROP" ]; then
     log "INFO" "Default INPUT policy is DROP."
   else
     log "WARNING" "Default INPUT policy is not DROP (current policy: $default_input_policy)."
   fi
 
+  # Check for SSH rule
   check_iptables_rule "dpt:22" "SSH is allowed."
+
+  # Check for established connections rule
   check_iptables_rule "RELATED,ESTABLISHED" "Related and established connections are allowed."
+
+  # Check for HTTP and HTTPS rule
+  check_iptables_rule "dpt:80" "HTTP is allowed."
+  check_iptables_rule "dpt:443" "HTTPS is allowed."
+
+  # Check for DNS rule (UDP and TCP port 53)
+  if sudo iptables -L INPUT -v -n | grep -q "53"; then
+    log "INFO" "DNS (port 53) is allowed."
+  else
+    log "WARNING" "DNS (port 53) is not present in iptables rules."
+  fi
 
 elif command -v nft &>/dev/null; then
   log "INFO" "Using nftables for firewall checks..."
 
-  # Example of checking rules with nftables
-  default_input_policy=$(nft list ruleset | grep "type filter hook input priority 0" | grep -oP '(?<=policy )\w+')
+  # Check default INPUT policy (nftables)
+  default_input_policy=$(sudo nft list ruleset | grep -oP '(?<=policy\s)\w+')
+
   if [ "$default_input_policy" = "drop" ]; then
     log "INFO" "Default INPUT policy is DROP."
   else
     log "WARNING" "Default INPUT policy is not DROP (current policy: $default_input_policy)."
   fi
 
+  # Check for SSH rule
   check_nftables_rule "dport 22" "SSH is allowed."
+
+  # Check for established connections rule
   check_nftables_rule "ct state established,related accept" "Related and established connections are allowed."
 
+  # Check for HTTP and HTTPS rule
+  check_nftables_rule "dport 80" "HTTP is allowed."
+  check_nftables_rule "dport 443" "HTTPS is allowed."
+
+  # Check for DNS rule (UDP and TCP port 53)
+  if sudo nft list ruleset | grep -q "53"; then
+    log "INFO" "DNS (port 53) is allowed."
+  else
+    log "WARNING" "DNS (port 53) is not present in nftables rules."
+  fi
+
 else
-  log "ERROR" "Neither iptables nor nftables is installed. Unable to check firewall rules."
+  log "ERROR" "Neither iptables nor nftables is installed. Firewall checks cannot be performed."
 fi
 
 # ===============================
