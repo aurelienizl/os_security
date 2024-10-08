@@ -66,6 +66,8 @@ else
   log "WARNING" "/var/log/kern.log access is not restricted."
 fi
 
+
+
 # ===============================
 # Finalizing compliance check
 # ===============================
