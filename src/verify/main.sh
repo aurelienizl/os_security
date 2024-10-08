@@ -34,6 +34,9 @@ run_script "./hard_file.sh"
 run_script "./hard_diskpart.sh"
 run_script "./hard_authid.sh"
 run_script "./hard_hardware.sh"
+run_script "./hard_kernel_memory.sh"
+run_script "./hard_sysctl.sh"
+run_script "./hard_yama.sh"
 
 # ===============================
 # Final Message
