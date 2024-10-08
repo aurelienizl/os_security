@@ -34,7 +34,7 @@ check_iptables_rule() {
   fi
 }
 
-# Helper function to check nftables rules
+# Helper function to check nftables rules (always using sudo)
 check_nftables_rule() {
   rule=$1
   message=$2
@@ -60,6 +60,7 @@ done
 # ===============================
 log "INFO" "Checking firewall rules..."
 
+# Check if iptables is installed and working
 if command -v iptables &>/dev/null; then
   log "INFO" "Using iptables for firewall checks..."
 
@@ -89,7 +90,8 @@ if command -v iptables &>/dev/null; then
     log "WARNING" "DNS (port 53) is not present in iptables rules."
   fi
 
-elif sudo command -v nft &>/dev/null; then
+# Check if nftables is installed and working (always using sudo for nft)
+elif command -v nft &>/dev/null; then
   log "INFO" "Using nftables for firewall checks..."
 
   # Check default INPUT policy (nftables)
