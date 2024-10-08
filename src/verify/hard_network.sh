@@ -81,6 +81,7 @@ if command -v iptables &>/dev/null; then
 
 else
   log "ERROR" "iptables is not installed. Firewall checks cannot be performed."
+  log "ERROR" "If you are using debian, you can ignore this message."
 fi
 
 # ===============================
