@@ -1,89 +1,105 @@
 #!/bin/bash
 
-# Check if running as root
+echo "Starting verification of authentication and identification hardening..."
+
+# Ensure running as root
 if [ "$EUID" -ne 0 ]; then
   echo "Please run this script as root."
   exit 1
 fi
 
-echo "Checking authentication and identification hardening compliance..."
+# ===============================
+# Check Installed Packages
+# ===============================
+check_package() {
+  package=$1
+  if dpkg -l | grep -q "$package"; then
+    echo "$package is installed."
+  else
+    echo "$package is NOT installed."
+  fi
+}
+
+check_package "libpam-pwquality"
+check_package "fail2ban"
 
 # ===============================
-# Check if libpam-pwquality or libpam-cracklib is installed
+# Check for Backups of Critical Configuration Files
 # ===============================
-echo "Checking if libpam-pwquality or libpam-cracklib is installed..."
-if dpkg -l | grep -q "libpam-pwquality" || dpkg -l | grep -q "libpam-cracklib"; then
-    echo "libpam-pwquality or libpam-cracklib is installed."
+check_backup() {
+  file=$1
+  if [ -f "$file.bak" ]; then
+    echo "Backup for $file exists."
+  else
+    echo "No backup for $file found."
+  fi
+}
+
+check_backup "/etc/pam.d/common-password"
+check_backup "/etc/pam.d/common-auth"
+check_backup "/etc/ssh/sshd_config"
+check_backup "/etc/pam.d/su"
+
+# ===============================
+# Verify Password Policies
+# ===============================
+echo "Verifying password policies..."
+if cmp -s config/common-password /etc/pam.d/common-password; then
+  echo "Password policy configuration matches expected settings."
 else
-    echo "libpam-pwquality or libpam-cracklib is not installed. Please install it with: sudo apt-get install libpam-pwquality"
+  echo "Password policy configuration does not match!"
 fi
 
 # ===============================
-# Check password policies in PAM
+# Verify Account Lockout Policy
 # ===============================
-echo "Checking password policies..."
-if grep -q "pam_pwquality.so" /etc/pam.d/common-password && grep -q "retry=3" /etc/pam.d/common-password && \
-   grep -q "minlen=12" /etc/pam.d/common-password && grep -q "ucredit=-1" /etc/pam.d/common-password && \
-   grep -q "lcredit=-1" /etc/pam.d/common-password && grep -q "dcredit=-1" /etc/pam.d/common-password && \
-   grep -q "ocredit=-1" /etc/pam.d/common-password; then
-  echo "Password policy for complexity and retries is correctly set."
+echo "Verifying account lockout policy..."
+if cmp -s config/common-auth /etc/pam.d/common-auth; then
+  echo "Account lockout policy matches expected settings."
 else
-  echo "Password policy for complexity and retries is not correctly set."
+  echo "Account lockout policy does not match!"
 fi
 
 # ===============================
-# Check account lockout policy
+# Verify SSH Configuration
 # ===============================
-echo "Checking account lockout policy..."
-if grep -q "pam_tally2.so" /etc/pam.d/common-auth && grep -q "deny=5" /etc/pam.d/common-auth && \
-   grep -q "unlock_time=1800" /etc/pam.d/common-auth; then
-  echo "Account lockout policy is correctly set."
+echo "Verifying SSH configuration..."
+if cmp -s config/sshd_config /etc/ssh/sshd_config; then
+  echo "SSH configuration matches expected settings."
 else
-  echo "Account lockout policy is not correctly set."
+  echo "SSH configuration does not match!"
 fi
 
 # ===============================
-# Check if root login is disabled
+# Verify su Command Limitation
 # ===============================
-echo "Checking if root login is disabled..."
-if grep -q "^PermitRootLogin no" /etc/ssh/sshd_config; then
-  echo "Root login is disabled."
+echo "Verifying su command limitation..."
+if cmp -s config/su /etc/pam.d/su; then
+  echo "su command limitation matches expected settings."
 else
-  echo "Root login is not disabled."
+  echo "su command limitation does not match!"
 fi
 
 # ===============================
-# Check su command restrictions
+# Check for Wheel Group
 # ===============================
-echo "Checking su command restrictions..."
-if grep -q "auth required pam_wheel.so" /etc/pam.d/su && grep -q "^wheel:x:10:" /etc/group; then
-  echo "su command restrictions are correctly set."
+if grep -q "^wheel:" /etc/group; then
+  echo "wheel group exists."
 else
-  echo "su command restrictions are not correctly set."
+  echo "wheel group does not exist!"
 fi
 
 # ===============================
-# Check login banner configuration
+# Verify Session Timeout
 # ===============================
-echo "Checking login banner configuration..."
-if grep -q "Authorized access only. All activity may be monitored and reported." /etc/issue.net && \
-   grep -q "Banner /etc/issue.net" /etc/ssh/sshd_config; then
-  echo "Login banner is correctly configured."
+echo "Verifying session timeout configuration..."
+if grep -q "TMOUT=600" /etc/profile; then
+  echo "Session timeout is configured correctly."
 else
-  echo "Login banner is not correctly configured."
+  echo "Session timeout is NOT configured!"
 fi
 
 # ===============================
-# Check session timeout configuration
+# Concluding Message
 # ===============================
-echo "Checking session timeout configuration..."
-if grep -q "TMOUT=600" /etc/profile && grep -q "readonly TMOUT" /etc/profile && grep -q "export TMOUT" /etc/profile; then
-  echo "Session timeout is correctly set."
-else
-  echo "Session timeout is not correctly set."
-fi
-
-# ===============================
-# Final Message
-# ===============================
-echo "Authentication and identification hardening compliance check completed."
+echo "Verification of authentication and identification hardening completed."
