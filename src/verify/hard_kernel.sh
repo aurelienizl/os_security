@@ -1,3 +1,5 @@
+# ANSSI SECTION R7
+
 #!/bin/bash
 source ./log.sh
 
@@ -8,6 +10,21 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 log "INFO" "Starting kernel hardening compliance check..."
+
+# ===============================
+# Check if IOMMU is enabled
+# ===============================
+log "INFO" "Checking if IOMMU is enabled (iommu=force)..."
+# Check if 'iommu=force' is passed as a kernel boot parameter in GRUB
+grub_config="/etc/default/grub"
+if grep -q "iommu=force" "$grub_config"; then
+  log "INFO" "IOMMU is correctly enabled (iommu=force) in GRUB configuration."
+else
+  log "WARNING" "IOMMU is not enabled (iommu=force) in GRUB configuration."
+fi
+
+log "INFO" "IOMMU configuration check completed."
+
 
 # ===============================
 # Check if kernel configuration backup exists

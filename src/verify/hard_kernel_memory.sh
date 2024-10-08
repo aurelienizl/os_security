@@ -1,3 +1,5 @@
+# ANSSI SECTION R8 
+
 #!/bin/bash
 source ./log.sh
 

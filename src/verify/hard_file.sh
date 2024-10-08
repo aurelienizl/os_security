@@ -89,7 +89,7 @@ log "INFO" "Checking for world-writable permissions on files and directories..."
 excluded_fs="proc|sys|dev|run"
 
 # Find world-writable files excluding specific pseudo-filesystems
-world_writable_files=$(find / -type f -perm -002 2>/dev/null | grep -Ev "^/($excluded_fs)")
+world_writable_files=$(find / -type d \( -perm -0002 -a \! -perm -1000 \) -ls 2>/dev/null)
 
 # Report results
 if [ -z "$world_writable_files" ]; then

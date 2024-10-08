@@ -23,6 +23,7 @@ check_package() {
 
 check_package "libpam-pwquality"
 check_package "fail2ban"
+check_package "auditd"
 
 # ===============================
 # Check for Backups of Critical Configuration Files
@@ -98,6 +99,16 @@ if grep -q "TMOUT=600" /etc/profile; then
   log "INFO" "Session timeout is configured correctly."
 else
   log "WARNING" "Session timeout is NOT configured!"
+fi
+
+## ===============================
+## Verify auditd Configuration
+## ===============================
+log "INFO" "Verifying auditd configuration..."
+if cmp -s config/audit.rules /etc/audit/rules.d/audit.rules; then
+  log "INFO" "auditd configuration matches expected settings."
+else
+  log "WARNING" "auditd configuration does not match!"
 fi
 
 # ===============================
