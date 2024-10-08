@@ -67,7 +67,12 @@ fi
 echo "Enforcing SSH security..."
 if [ -f "config/sshd_config" ]; then
   sudo cp config/sshd_config /etc/ssh/sshd_config
-  sudo systemctl restart sshd
+  if systemctl is-active --quiet ssh; then
+    sudo systemctl reload ssh
+    echo "SSH configuration reloaded."
+  else
+    echo "SSH service is not active."
+  fi
 else
   echo "sshd_config configuration file not found!"
 fi
