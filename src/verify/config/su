@@ -1,0 +1,31 @@
+#%PAM-1.0
+
+# This line includes the common authentication rules for the su command
+auth       sufficient   pam_rootok.so
+
+# Allow users in the "wheel" group to use su without restriction
+auth       required     pam_wheel.so use_uid
+
+# Enforce strong password authentication for users using su
+auth       include      common-auth
+
+# Account management, includes common account rules
+account    include      common-account
+
+# Password management, includes common password rules
+password   include      common-password
+
+# Session management, includes common session rules
+session    include      common-session
+
+# Logging of su usage
+session    optional     pam_lastlog.so
+
+# Restrict su usage to members of the wheel group only
+auth required pam_wheel.so group=wheel
+
+# Enable limits on resource usage for su sessions
+session    required     pam_limits.so
+
+# Set up a new user session for su
+session    required     pam_env.so
