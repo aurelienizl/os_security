@@ -1,99 +1,100 @@
 #!/bin/bash
+source ./log.sh
 
 # Check if running as root
 if [ "$EUID" -ne 0 ]; then
-  echo "Please run this script as root."
+  log "ERROR" "Please run this script as root."
   exit 1
 fi
 
-echo "Starting hardware hardening compliance check..."
+log "INFO" "Starting hardware hardening compliance check..."
 
 # ===============================
 # Kernel Module Checks
 # ===============================
+log "INFO" "Checking kernel modules..."
 
 # Check if USB storage is blacklisted
-echo "Checking kernel modules..."
 if grep -q "blacklist usb-storage" /etc/modprobe.d/*.conf; then
-  echo "USB storage is blacklisted."
+  log "INFO" "USB storage is blacklisted."
 else
-  echo "WARNING: USB storage is not blacklisted."
+  log "WARNING" "USB storage is not blacklisted."
 fi
 
 # Check if Firewire modules are blacklisted
 if grep -q "blacklist firewire-core" /etc/modprobe.d/*.conf; then
-  echo "Firewire modules are blacklisted."
+  log "INFO" "Firewire modules are blacklisted."
 else
-  echo "WARNING: Firewire modules are not blacklisted."
+  log "WARNING" "Firewire modules are not blacklisted."
 fi
 
 # ===============================
 # Device and Port Permissions
 # ===============================
+log "INFO" "Checking device and port permissions..."
 
-# Check permissions of serial ports
-echo "Checking device and port permissions..."
 serial_ports=$(ls /dev/ttyS* 2>/dev/null)
 if [ -n "$serial_ports" ]; then
   for port in $serial_ports; do
     if [ "$(stat -c "%a" "$port")" -eq 700 ]; then
-      echo "$port has correct permissions."
+      log "INFO" "$port has correct permissions."
     else
-      echo "WARNING: $port does not have correct permissions. Current permissions: $(stat -c "%a" "$port")"
+      log "WARNING" "$port does not have correct permissions. Current permissions: $(stat -c "%a" "$port")"
     fi
   done
 else
-  echo "No serial ports found."
+  log "INFO" "No serial ports found."
 fi
 
 # ===============================
 # Console and Boot Settings
 # ===============================
+log "INFO" "Checking console and boot settings..."
 
 # Check if physical console access is restricted
-echo "Checking console and boot settings..."
 if [ -f "/etc/securetty" ] && grep -q "console" /etc/securetty; then
-  echo "Physical console access is restricted."
+  log "INFO" "Physical console access is restricted."
 else
-  echo "WARNING: Physical console access is not restricted."
+  log "WARNING" "Physical console access is not restricted."
 fi
 
 # Check if booting from external media is disabled (GRUB recovery mode)
 grub_file="/etc/default/grub"
 if [ -f "$grub_file" ] && grep -q 'GRUB_DISABLE_RECOVERY="true"' "$grub_file"; then
-  echo "Boot from external media is disabled."
+  log "INFO" "Boot from external media is disabled."
 else
-  echo "WARNING: Boot from external media is not disabled."
+  log "WARNING" "Boot from external media is not disabled."
 fi
 
 # ===============================
 # GRUB and Password Policy
 # ===============================
+log "INFO" "Checking GRUB and password policies..."
 
 # Check if GRUB password is set
-echo "Checking GRUB and password policies..."
 if grep -q "GRUB_PASSWORD" "$grub_file"; then
-  echo "GRUB password is set."
+  log "INFO" "GRUB password is set."
 else
-  echo "WARNING: GRUB password is not set."
+  log "WARNING" "GRUB password is not set."
 fi
 
 # Check if the root account is locked
 if passwd -S root | grep -q "L"; then
-  echo "Root account is locked."
+  log "INFO" "Root account is locked."
 else
-  echo "WARNING: Root account is not locked."
+  log "WARNING" "Root account is not locked."
 fi
 
 # Check password policy in /etc/login.defs
 password_policy_check() {
   local setting=$1
   local expected_value=$2
-  local actual_value=$(grep "^$setting" /etc/login.defs | awk '{print $2}')
+  local actual_value
+  actual_value=$(grep "^$setting" /etc/login.defs | awk '{print $2}')
   if [ "$actual_value" -eq "$expected_value" ]; then
-    echo "$setting is correctly set to $expected_value."
+    log "INFO" "$setting is correctly set to $expected_value."
   else
-    echo "WARNING: $setting is not correctly set. Current value: $actual_value."
+    log "WARNING" "$setting is not correctly set. Current value: $actual_value."
   fi
 }
 
@@ -104,5 +105,4 @@ password_policy_check "PASS_WARN_AGE" 14
 # ===============================
 # Concluding Message
 # ===============================
-
-echo "Hardware hardening compliance check completed."
+log "INFO" "Hardware hardening compliance check completed."

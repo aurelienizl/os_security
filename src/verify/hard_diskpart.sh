@@ -1,6 +1,7 @@
 #!/bin/bash
+source ./log.sh
 
-echo "Starting partition options verification according to ANSSI Hardening measures..."
+log "INFO" "Starting partition options verification according to ANSSI Hardening measures..."
 
 # Function to check if mount options are set correctly
 check_mount_options() {
@@ -9,9 +10,9 @@ check_mount_options() {
 
   mount_output=$(findmnt -n -o OPTIONS "$mount_point")
   if [[ "$mount_output" == *"$expected_options"* ]]; then
-    echo "$mount_point is correctly configured with options: $expected_options"
+    log "INFO" "$mount_point is correctly configured with options: $expected_options"
   else
-    echo "WARNING: $mount_point does not have the expected options: $expected_options"
+    log "WARNING" "$mount_point does not have the expected options: $expected_options"
   fi
 }
 
@@ -21,9 +22,9 @@ check_blacklisted_filesystem() {
   local blacklist_file="/etc/modprobe.d/blacklist.conf"
 
   if grep -q "^blacklist $fs" "$blacklist_file"; then
-    echo "Filesystem $fs is correctly blacklisted in $blacklist_file."
+    log "INFO" "Filesystem $fs is correctly blacklisted in $blacklist_file."
   else
-    echo "WARNING: Filesystem $fs is not blacklisted in $blacklist_file."
+    log "WARNING" "Filesystem $fs is not blacklisted in $blacklist_file."
   fi
 }
 
@@ -65,7 +66,7 @@ check_mount_options "/var/log" "nosuid,nodev,noexec"
 check_mount_options "/var/tmp" "nosuid,nodev,noexec"
 
 # ===============================
-echo "Checking if risky filesystems are blacklisted..."
+log "INFO" "Checking if risky filesystems are blacklisted..."
 
 # Add the filesystems considered risky
 risky_filesystems=("cramfs" "freevxfs" "jffs2" "hfs" "hfsplus" "squashfs" "udf" "vfat")
@@ -77,4 +78,4 @@ done
 # ===============================
 # Concluding Message
 # ===============================
-echo "Partition options and risky filesystem verification completed."
+log "INFO" "Partition options and risky filesystem verification completed."
