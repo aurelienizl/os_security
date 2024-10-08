@@ -34,17 +34,6 @@ check_iptables_rule() {
   fi
 }
 
-# Helper function to check nftables rules (always using sudo)
-check_nftables_rule() {
-  rule=$1
-  message=$2
-  if sudo nft list ruleset | grep -q "$rule"; then
-    log "INFO" "$message"
-  else
-    log "WARNING" "$rule is not present in nftables rules."
-  fi
-}
-
 # ===============================
 # Check if unused network services are disabled
 # ===============================
@@ -56,7 +45,7 @@ for service in "${services[@]}"; do
 done
 
 # ===============================
-# Check firewall rules (iptables/nftables)
+# Check firewall rules (iptables)
 # ===============================
 log "INFO" "Checking firewall rules..."
 
@@ -90,38 +79,8 @@ if command -v iptables &>/dev/null; then
     log "WARNING" "DNS (port 53) is not present in iptables rules."
   fi
 
-# Check if nftables is installed and working (always using sudo for nft)
-elif command -v nft &>/dev/null; then
-  log "INFO" "Using nftables for firewall checks..."
-
-  # Check default INPUT policy (nftables)
-  default_input_policy=$(sudo nft list ruleset | grep -oP '(?<=policy\s)\w+')
-
-  if [ "$default_input_policy" = "drop" ]; then
-    log "INFO" "Default INPUT policy is DROP."
-  else
-    log "WARNING" "Default INPUT policy is not DROP (current policy: $default_input_policy)."
-  fi
-
-  # Check for SSH rule
-  check_nftables_rule "dport 22" "SSH is allowed."
-
-  # Check for established connections rule
-  check_nftables_rule "ct state established,related accept" "Related and established connections are allowed."
-
-  # Check for HTTP and HTTPS rule
-  check_nftables_rule "dport 80" "HTTP is allowed."
-  check_nftables_rule "dport 443" "HTTPS is allowed."
-
-  # Check for DNS rule (UDP and TCP port 53)
-  if sudo nft list ruleset | grep -q "53"; then
-    log "INFO" "DNS (port 53) is allowed."
-  else
-    log "WARNING" "DNS (port 53) is not present in nftables rules."
-  fi
-
 else
-  log "ERROR" "Neither iptables nor nftables is installed. Firewall checks cannot be performed."
+  log "ERROR" "iptables is not installed. Firewall checks cannot be performed."
 fi
 
 # ===============================
