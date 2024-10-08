@@ -72,7 +72,7 @@ declare -A sysctl_params=(
 check_sysctl_param() {
   param=$1
   expected_value=$2
-  actual_value=$(sysctl -n "$param" 2>/dev/null)
+  actual_value=$(sudo sysctl -n "$param" 2>/dev/null)
 
   if [ "$actual_value" == "$expected_value" ]; then
     log "INFO" "$param is correctly set to $expected_value."

@@ -14,7 +14,7 @@ else
 fi
 
 # Check if kernel.yama.ptrace_scope is set to at least 1
-ptrace_scope=$(sysctl -n kernel.yama.ptrace_scope 2>/dev/null)
+ptrace_scope=$(sudo sysctl -n kernel.yama.ptrace_scope 2>/dev/null)
 
 if [ "$ptrace_scope" -ge 1 ]; then
   log "INFO" "kernel.yama.ptrace_scope is correctly set to $ptrace_scope."
