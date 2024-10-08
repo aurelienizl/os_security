@@ -1,6 +1,7 @@
 # System Hardening Scripts
 
 This project contains a collection of shell scripts designed to harden a Linux system by applying various security configurations on ~900 shell lines.
+This project targets Ubuntu 22.04 LTS and Debian 12 systems, but it can be adapted to other distributions.
 
 ## Project Structure
 
@@ -44,6 +45,8 @@ The `config` directory contains configuration files used by the hardening script
 - **common-password**: Common password settings.
 - **sshd_config**: SSH daemon configuration.
 - **su**: Configuration for the `su` command.
+
+All configuration files can be updated to match the system's requirements.
 
 ## Logging
 
